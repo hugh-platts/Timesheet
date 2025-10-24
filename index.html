@@ -191,7 +191,7 @@
                const mileagePayEl = document.getElementById('mileage-pay');
                const hourlyRateInput = document.getElementById('hourly-rate');
 
-               const MILEAGE_RATE = 0.40;
+               const MILEAGE_RATE = 0.45;
                const initialDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
                let dayCounter = 0;
 
@@ -255,7 +255,7 @@
                                newRow.querySelector('.mileage').value = rowData.miles || '';
                                newRow.querySelector('.lunch-checkbox').checked = rowData.lunch || false;
                                const lunchInput = newRow.querySelector('.lunch-minutes');
-                               lunchInput.value = rowData.lunchMins || '30';
+                               lunchInput.value = rowData.lunchMins || '45';
                                lunchInput.disabled = !(rowData.lunch || false);
                            }
                        });
