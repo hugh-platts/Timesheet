@@ -1,0 +1,422 @@
+   <!DOCTYPE html>
+   <html lang="en">
+
+   <head>
+       <meta charset="UTF-8">
+       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+       <title>Timesheet </title>
+       <script src="https://cdn.tailwindcss.com"></script>
+       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+       <style>
+           body {
+               font-family: 'Inter', sans-serif;
+           }
+
+           /* Custom styles for better input appearance in all browsers */
+           input[type="time"]::-webkit-calendar-picker-indicator,
+           input[type="number"]::-webkit-inner-spin-button,
+           input[type="number"]::-webkit-outer-spin-button {
+               opacity: 1;
+           }
+
+           .table-cell {
+               padding: 0.75rem;
+               vertical-align: middle;
+               text-align: center;
+           }
+
+           .input-field {
+               width: 100%;
+               padding: 0.5rem;
+               border-radius: 0.375rem;
+               border: 1px solid #D1D5DB;
+               transition: border-color 0.2s, box-shadow 0.2s;
+           }
+
+           .input-field:focus {
+               outline: none;
+               border-color: #3B82F6;
+               box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
+           }
+
+           .input-field:disabled {
+               background-color: #F3F4F6;
+               cursor: not-allowed;
+           }
+
+           /* Responsive Table Styles for Mobile */
+           @media (max-width: 768px) {
+               .responsive-table thead {
+                   display: none;
+               }
+
+               .responsive-table .day-row {
+                   display: block;
+                   margin-bottom: 1rem;
+                   border: 1px solid #e5e7eb;
+                   border-radius: 0.5rem;
+                   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+                   padding: 0;
+               }
+
+               .responsive-table .table-cell {
+                   display: flex;
+                   justify-content: space-between;
+                   align-items: center;
+                   padding: 0.75rem;
+                   text-align: right;
+                   border-bottom: 1px solid #f3f4f6;
+               }
+
+               .responsive-table .day-row .table-cell:last-child {
+                   border-bottom: none;
+               }
+
+               .responsive-table .table-cell::before {
+                   content: attr(data-label);
+                   font-weight: 500;
+                   text-align: left;
+                   padding-right: 1rem;
+                   color: #4B5563;
+                   /* text-gray-600 */
+               }
+
+               /* Style the first cell as a card header */
+               .responsive-table .table-cell:first-child {
+                   background-color: #F9FAFB;
+                   /* bg-gray-50 */
+                   border-top-left-radius: 0.5rem;
+                   border-top-right-radius: 0.5rem;
+                   justify-content: center;
+                   font-size: 1.125rem;
+                   /* text-lg */
+                   font-weight: 600;
+               }
+
+               .responsive-table .table-cell:first-child::before {
+                   display: none;
+                   /* No label for the day name header */
+               }
+
+               /* Constrain input width in card view */
+               .responsive-table .input-field {
+                   max-width: 150px;
+               }
+           }
+       </style>
+   </head>
+
+   <body class="bg-gray-100 flex items-center justify-center min-h-screen p-2 sm:p-4">
+
+       <div class="w-full max-w-5xl bg-white rounded-xl shadow-lg p-4 md:p-8">
+
+           <header class="mb-6 text-center">
+               <h1 class="text-3xl font-bold text-gray-800">Timesheet Generator</h1>
+               <p class="text-gray-500 mt-1">Easily calculate your weekly hours, mileage, and pay.</p>
+           </header>
+
+           <!-- Settings Section -->
+           <div class="mb-6 bg-gray-50 p-4 rounded-lg flex flex-col sm:flex-row items-center gap-4">
+               <label for="hourly-rate" class="font-medium text-gray-700 whitespace-nowrap">Hourly Rate (£):</label>
+               <input type="number" id="hourly-rate" min="0" step="0.01" class="input-field w-full sm:w-32 text-center" placeholder="e.g., 14.00">
+               <span class="text-gray-500 text-sm ml-auto text-center sm:text-right">Mileage contribution is fixed at £0.45 per mile.</span>
+           </div>
+
+           <!-- Timesheet Table -->
+           <div class="overflow-x-auto">
+               <table class="min-w-full divide-y divide-gray-200 responsive-table">
+                   <thead class="bg-gray-50">
+                       <tr>
+                           <th class="table-cell font-medium text-xs text-gray-500 uppercase tracking-wider">Day</th>
+                           <th class="table-cell font-medium text-xs text-gray-500 uppercase tracking-wider">Start Time</th>
+                           <th class="table-cell font-medium text-xs text-gray-500 uppercase tracking-wider">End Time</th>
+                           <th class="table-cell font-medium text-xs text-gray-500 uppercase tracking-wider">Mileage</th>
+                           <th class="table-cell font-medium text-xs text-gray-500 uppercase tracking-wider text-center">Lunch Break?</th>
+                           <th class="table-cell font-medium text-xs text-gray-500 uppercase tracking-wider">Lunch (mins)</th>
+                           <th class="table-cell font-medium text-xs text-gray-500 uppercase tracking-wider">Daily Hours</th>
+                           <th class="table-cell font-medium text-xs text-gray-500 uppercase tracking-wider">Copy</th>
+                       </tr>
+                   </thead>
+                   <tbody id="timesheet-body" class="bg-white divide-y divide-gray-200 md:divide-y-0">
+                       <!-- Rows will be dynamically inserted here -->
+                   </tbody>
+               </table>
+           </div>
+
+           <!-- Action Buttons -->
+           <div class="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+               <button id="add-row-btn" class="w-full sm:w-auto px-4 py-2 bg-indigo-500 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-opacity-75 transition duration-200">
+                   Add Day
+               </button>
+               <div class="flex items-center gap-4">
+                   <button id="reset-btn" class="w-full sm:w-auto px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75 transition duration-200">
+                       Reset
+                   </button>
+                   <button id="calculate-btn" class="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-200">
+                       Calculate
+                   </button>
+               </div>
+           </div>
+
+           <!-- Totals Section -->
+           <div class="mt-8 pt-6 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+               <div class="bg-blue-50 p-4 rounded-lg text-center">
+                   <p class="text-sm font-medium text-blue-600">Total Hours Worked</p>
+                   <p id="total-hours" class="text-3xl font-bold text-blue-800">0.00</p>
+               </div>
+               <div class="bg-green-50 p-4 rounded-lg text-center">
+                   <p class="text-sm font-medium text-green-600">Total Mileage</p>
+                   <p id="total-mileage" class="text-3xl font-bold text-green-800">0</p>
+               </div>
+               <div class="bg-yellow-50 p-4 rounded-lg text-center">
+                   <p class="text-sm font-medium text-yellow-600">Mileage Contribution</p>
+                   <p id="mileage-pay" class="text-3xl font-bold text-yellow-800">£0.00</p>
+               </div>
+               <div class="bg-purple-50 p-4 rounded-lg text-center">
+                   <p class="text-sm font-medium text-purple-600">Total Pay</p>
+                   <p id="total-pay" class="text-3xl font-bold text-purple-800">£0.00</p>
+               </div>
+           </div>
+       </div>
+
+       <script>
+           document.addEventListener('DOMContentLoaded', () => {
+               const timesheetBody = document.getElementById('timesheet-body');
+               const addRowBtn = document.getElementById('add-row-btn');
+               const calculateBtn = document.getElementById('calculate-btn');
+               const resetBtn = document.getElementById('reset-btn');
+               const totalHoursEl = document.getElementById('total-hours');
+               const totalMileageEl = document.getElementById('total-mileage');
+               const totalPayEl = document.getElementById('total-pay');
+               const mileagePayEl = document.getElementById('mileage-pay');
+               const hourlyRateInput = document.getElementById('hourly-rate');
+
+               const MILEAGE_RATE = 0.45;
+               const initialDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+               let dayCounter = 0;
+
+               const createRow = (dayName) => {
+                   const tr = document.createElement('tr');
+                   tr.classList.add('day-row');
+                   tr.innerHTML = `
+                    <td class="table-cell" data-label="Day"><span class="font-medium text-gray-700">${dayName}</span></td>
+                    <td class="table-cell" data-label="Start Time"><input type="time" class="start-time input-field text-center"></td>
+                    <td class="table-cell" data-label="End Time"><input type="time" class="end-time input-field text-center"></td>
+                    <td class="table-cell" data-label="Mileage"><input type="number" min="0" class="mileage input-field text-center" placeholder="0"></td>
+                    <td class="table-cell flex justify-center items-center" data-label="Lunch Break?"><input type="checkbox" class="lunch-checkbox h-6 w-6 text-blue-600 border-gray-300 rounded focus:ring-blue-500"></td>
+                    <td class="table-cell" data-label="Lunch (mins)"><input type="number" min="0" value="30" class="lunch-minutes input-field text-center" disabled></td>
+                    <td class="table-cell" data-label="Daily Hours"><span class="daily-hours font-mono text-gray-800 font-semibold">0.00</span></td>
+                    <td class="table-cell" data-label="Copy">
+                        <button class="copy-down-btn p-2 rounded-full hover:bg-gray-200 transition-colors" title="Copy this row down to all rows below">
+                            <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                    </td>
+                `;
+                   timesheetBody.appendChild(tr);
+                   dayCounter++;
+               };
+
+               const initializeSheet = () => {
+                   timesheetBody.innerHTML = '';
+                   dayCounter = 0;
+                   initialDays.forEach(day => createRow(day));
+               };
+
+               /**
+                * NEW FUNCTION: Loads the state from the URL parameter 'data'
+                */
+               const loadStateFromUrl = () => {
+                   const params = new URLSearchParams(window.location.search);
+                   const dataParam = params.get('data');
+                   if (!dataParam) return false; // No data, do nothing
+
+                   try {
+                       // Decode from URL-safe format, then from Base64, then parse from JSON
+                       const base64String = decodeURIComponent(dataParam);
+                       const jsonString = atob(base64String);
+                       const loadedData = JSON.parse(jsonString);
+
+                       if (!loadedData || !loadedData.rows) return false;
+
+                       // Populate global fields
+                       hourlyRateInput.value = loadedData.rate || '';
+
+                       // Populate rows
+                       timesheetBody.innerHTML = ''; // Clear default rows
+                       dayCounter = 0;
+
+                       loadedData.rows.forEach(rowData => {
+                           createRow(rowData.day); // Create row with the saved day name
+                           const newRow = timesheetBody.lastElementChild; // Get the row we just added
+
+                           if (newRow) {
+                               newRow.querySelector('.start-time').value = rowData.start || '';
+                               newRow.querySelector('.end-time').value = rowData.end || '';
+                               newRow.querySelector('.mileage').value = rowData.miles || '';
+                               newRow.querySelector('.lunch-checkbox').checked = rowData.lunch || false;
+                               const lunchInput = newRow.querySelector('.lunch-minutes');
+                               lunchInput.value = rowData.lunchMins || '45';
+                               lunchInput.disabled = !(rowData.lunch || false);
+                           }
+                       });
+
+                       // Automatically calculate the totals from the loaded data
+                       calculateBtn.click(); // This will also update the URL again, which is fine
+
+                       return true; // Signal that we successfully loaded from URL
+
+                   } catch (e) {
+                       console.error('Failed to parse URL data:', e);
+                       return false; // Failed, will fall back to default
+                   }
+               };
+
+               // MODIFIED INITIALIZATION:
+               // Try to load from URL first. If it fails (returns false), then initialize the default sheet.
+               if (!loadStateFromUrl()) {
+                   initializeSheet();
+               }
+
+               addRowBtn.addEventListener('click', () => {
+                   createRow(`Day ${dayCounter + 1}`);
+               });
+
+               timesheetBody.addEventListener('change', (e) => {
+                   if (e.target.classList.contains('lunch-checkbox')) {
+                       const row = e.target.closest('.day-row');
+                       const lunchMinutesInput = row.querySelector('.lunch-minutes');
+                       lunchMinutesInput.disabled = !e.target.checked;
+                   }
+               });
+
+               timesheetBody.addEventListener('click', (e) => {
+                   const copyBtn = e.target.closest('.copy-down-btn');
+                   if (copyBtn) {
+                       const sourceRow = copyBtn.closest('.day-row');
+                       const rows = Array.from(timesheetBody.querySelectorAll('.day-row'));
+                       const sourceIndex = rows.indexOf(sourceRow);
+
+                       if (sourceIndex === -1 || sourceIndex === rows.length - 1) return;
+
+                       const startTime = sourceRow.querySelector('.start-time').value;
+                       const endTime = sourceRow.querySelector('.end-time').value;
+                       const mileage = sourceRow.querySelector('.mileage').value;
+                       const lunchChecked = sourceRow.querySelector('.lunch-checkbox').checked;
+                       const lunchMinutes = sourceRow.querySelector('.lunch-minutes').value;
+
+                       for (let i = sourceIndex + 1; i < rows.length; i++) {
+                           const targetRow = rows[i];
+                           targetRow.querySelector('.start-time').value = startTime;
+                           targetRow.querySelector('.end-time').value = endTime;
+                           targetRow.querySelector('.mileage').value = mileage;
+                           targetRow.querySelector('.lunch-checkbox').checked = lunchChecked;
+                           targetRow.querySelector('.lunch-minutes').value = lunchMinutes;
+                           targetRow.querySelector('.lunch-minutes').disabled = !lunchChecked;
+                       }
+                   }
+               });
+
+               resetBtn.addEventListener('click', () => {
+                   initializeSheet();
+                   totalHoursEl.textContent = '0.00';
+                   totalMileageEl.textContent = '0';
+                   mileagePayEl.textContent = '£0.00';
+                   totalPayEl.textContent = '£0.00';
+                   hourlyRateInput.value = '';
+
+                   // NEW: Clear the URL parameter on reset
+                   window.history.pushState({}, '', window.location.pathname);
+               });
+
+               calculateBtn.addEventListener('click', () => {
+                   let grandTotalHours = 0;
+                   let grandTotalMileage = 0;
+                   const hourlyRate = parseFloat(hourlyRateInput.value) || 0;
+
+                   const rows = timesheetBody.querySelectorAll('.day-row');
+
+                   rows.forEach(row => {
+                       const startTime = row.querySelector('.start-time').value;
+                       const endTime = row.querySelector('.end-time').value;
+                       const mileage = parseFloat(row.querySelector('.mileage').value) || 0;
+                       const lunchTaken = row.querySelector('.lunch-checkbox').checked;
+                       const lunchMinutes = parseInt(row.querySelector('.lunch-minutes').value) || 0;
+                       const dailyHoursEl = row.querySelector('.daily-hours');
+
+                       let dailyHours = 0;
+                       if (startTime && endTime) {
+                           const start = new Date(`1970-01-01T${startTime}:00`);
+                           const end = new Date(`1970-01-01T${endTime}:00`);
+
+                           if (end < start) end.setDate(end.getDate() + 1);
+
+                           let diff = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+
+                           if (lunchTaken) diff -= (lunchMinutes / 60);
+
+                           dailyHours = diff > 0 ? diff : 0;
+                       }
+
+                       dailyHoursEl.textContent = dailyHours.toFixed(2);
+                       grandTotalHours += dailyHours;
+                       grandTotalMileage += mileage;
+                   });
+
+                   const hoursPay = grandTotalHours * hourlyRate;
+                   const mileagePay = grandTotalMileage * MILEAGE_RATE;
+                   const totalPay = hoursPay + mileagePay;
+
+                   totalHoursEl.textContent = grandTotalHours.toFixed(2);
+                   totalMileageEl.textContent = grandTotalMileage;
+                   mileagePayEl.textContent = mileagePay.toLocaleString('en-GB', {
+                       style: 'currency',
+                       currency: 'GBP'
+                   });
+                   totalPayEl.textContent = totalPay.toLocaleString('en-GB', {
+                       style: 'currency',
+                       currency: 'GBP'
+                   });
+
+                   // --- NEW CODE TO UPDATE URL ---
+                   try {
+                       const dataToSave = {
+                           rate: hourlyRateInput.value,
+                           rows: []
+                       };
+
+                       // Loop through the rows again to get all the raw input values
+                       timesheetBody.querySelectorAll('.day-row').forEach(row => {
+                           dataToSave.rows.push({
+                               day: row.querySelector('td:first-child span').textContent,
+                               start: row.querySelector('.start-time').value,
+                               end: row.querySelector('.end-time').value,
+                               miles: row.querySelector('.mileage').value,
+                               lunch: row.querySelector('.lunch-checkbox').checked,
+                               lunchMins: row.querySelector('.lunch-minutes').value
+                           });
+                       });
+
+                       // Convert data to JSON, then to Base64, then make it URL-safe
+                       const jsonString = JSON.stringify(dataToSave);
+                       const base64String = btoa(jsonString); // btoa = binary to ASCII (Base64)
+                       const urlSafeData = encodeURIComponent(base64String);
+
+                       // Build the new URL
+                       const newUrl = `${window.location.pathname}?data=${urlSafeData}`;
+
+                       // Update the URL in the browser bar without reloading the page
+                       window.history.pushState({
+                           path: newUrl
+                       }, '', newUrl);
+
+                   } catch (e) {
+                       console.error('Failed to save state to URL:', e);
+                   }
+                   // --- END OF NEW CODE ---
+               });
+           });
+       </script>
+
+   </body>
+
+   </html>
